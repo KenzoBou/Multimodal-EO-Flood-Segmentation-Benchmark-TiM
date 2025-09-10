@@ -85,8 +85,8 @@ class Sen1FloodsDataset(Dataset):
         
         if self.normalize:
             index_modalities = [band - 1 for band in self.bands]+ [-2,-1] if 'S1' in self.modalities else [band - 1 for band in self.bands]
-            mean = np.array(config.MEAN_S2_BANDS)[index_modalities]
-            std = np.array(config.STD_S2_BANDS)[index_modalities]
+            mean = np.array(config.GLOBAL_MEAN_BANDS)[index_modalities]
+            std = np.array(config.GLOBAL_STD_BANDS)[index_modalities]
             image_tensor = transforms.Normalize(mean=mean, std=std)(image_tensor)
         
         return image_tensor, mask_tensor
