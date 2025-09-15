@@ -19,7 +19,7 @@ BATCH_SIZE = 8  # À ajuster selon la VRAM de ton GPU
 LEARNING_RATE = 1e-4
 NUM_EPOCHS = 10
 NUM_WORKERS = 4 # Pour le DataLoader, à ajuster selon ton CPU
-FT_PATIENCE = 3 # Patience for the fine_tuning training
+FT_PATIENCE = 2 # Patience for the fine_tuning training
 FT_RATIO = 0.2
 
 # --- Paramètres du Modèle ---
@@ -32,6 +32,8 @@ NUM_CLASSES = 2 # 0: Pas d'eau, 1: Eau
 GLOBAL_MEAN_BANDS = [1598.8531, 1362.6958, 1327.7782, 1169.7328, 1421.3483, 2346.7397,
         2806.1011, 2587.2292, 3037.6382,  466.7194,   51.9969, 1980.6827,
         1134.9529,  -10.5458,  -17.3930]
+
+MEAN_BANDS_TO_USE = []
 
 GLOBAL_STD_BANDS = [354.9994, 404.8562, 418.5381, 517.5894, 465.1054, 636.3958, 765.9728,
         739.3975, 850.8776, 143.3036,  15.9182, 693.8527, 523.0807,   3.5716,

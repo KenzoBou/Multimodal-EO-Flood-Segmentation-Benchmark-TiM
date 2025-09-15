@@ -1,24 +1,46 @@
 import lightning.pytorch as pl
+from lightning.pytorch.callbacks import ModelCheckpoint
 from pathlib import Path
 from torchvision import transforms
+from lightning.pytorch.loggers import MLFlowLogger
 import albumentations
 
 from terratorch.datamodules import GenericMultiModalDataModule
 
 import config
-from utils.parser import get_args # On utilisera une version simplifiée
+from utils.parser import get_args 
 from lightning_wrappers import CustomSegmentationTask
+from lightning_callbacks import EncoderFineTuning
 
 
 def run():
     # We hardcode to test 
-    BATCH_SIZE = 8 
-    LEARNING_RATE = 1e-4
-    INPUT_DIM = 11
-    NUM_CLASSES = 2
-    MAX_EPOCHS = 10
-    ARCHITECTURE = 'unet'
-    BACKBONE = 'resnet34'
+    args = get_args()
+    BATCH_SIZE = args.batch_size
+    LEARNING_RATE = args.learning_rate
+    INPUT_DIM = config.INPUT_DIM
+    NUM_CLASSES = config.NUM_CLASSES
+    MAX_EPOCHS = args.epochs
+    ARCHITECTURE = args.architecture
+    BACKBONE = args.backbone
+    PATIENCE = args.patience
+
+    run_name = f'{ARCHITECTURE}|{BACKBONE}|{LEARNING_RATE}'
+    mlflow_log = MLFlowLogger(
+        experiment_name=config.EXPERIMENT_NAME,
+        run_name=run_name
+    )
+
+    checkpoint_callback = ModelCheckpoint(dirpath=config.MODEL_PATH,
+                                          filename=f"{ARCHITECTURE}-{BACKBONE}"+"-{epoch:02d}-{val_iou_water:.2f}",
+                                          monitor='val_iou_water',
+                                          mode='max',)
+    fine_tuning_callback = EncoderFineTuning(
+        patience=PATIENCE,
+        unfreeze_lr=LEARNING_RATE/5 #to modify later
+    )
+
+
     s2_band_indices = [config.ALL_S2_BANDS_NAMES.index(band) for band in config.S2_BANDS_NAMES_TO_USE]
     filtered_s2_means = [config.GLOBAL_MEAN_BANDS[i] for i in s2_band_indices]
     filtered_s2_stds = [config.GLOBAL_STD_BANDS[i] for i in s2_band_indices]
@@ -42,7 +64,7 @@ def run():
         batch_size=BATCH_SIZE,
         num_classes=NUM_CLASSES,
         modalities=['S2','S1'],
-        num_workers=11,
+        num_workers=4,
 
         dataset_bands={
             'S2': ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B10','B11', 'B12'],
@@ -52,7 +74,7 @@ def run():
             'S2': config.S2_BANDS_NAMES_TO_USE,
             'S1': ['VV', 'VH']
         },
-        # concat_bands=True,
+        concat_bands=True,
         means={
             'S2':filtered_s2_means,
             'S1':config.GLOBAL_MEAN_BANDS[-2:]
@@ -91,7 +113,7 @@ def run():
         test_split=split_path/'flood_test_data.txt',
 
          
-        no_label_replace=255, # Replace -1 by 255
+        no_label_replace=-1, # Replace -1 by 255
         no_data_replace=0 # Replace NaN by 0
     )
 
@@ -100,7 +122,8 @@ def run():
         strategy='auto',
         max_epochs=MAX_EPOCHS,
         precision='16-mixed', #accelerates compute
-        logger=pl.loggers.TensorBoardLogger("logs/", name=f"{ARCHITECTURE}-{BACKBONE}"),
+        logger=mlflow_log,
+        callbacks=[checkpoint_callback, fine_tuning_callback]
     )
 
     

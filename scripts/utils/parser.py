@@ -11,9 +11,9 @@ def get_args():
     
     #Learning parameters
     parser.add_argument('--epochs', '-e', type=int, default=config.NUM_EPOCHS, help='Number of training epochs')
-    parser.add_argument('--learning_strategy', '-ls', type=str, default='end_to_end', help='Determines if we do an end-to-end training or a fine-tuning process (only available for U-Net and DeeplabV3Plus)', choices=['end_to_end', 'fixed_fine_tuning', 'patience_fine_tuning'])
-    parser.add_argument('--batch-size', '-b', type=int, default=config.BATCH_SIZE, help='Batch size')
-    parser.add_argument('--learning-rate', '-lr', type=float, default=config.LEARNING_RATE, help='Learning rate')
+    parser.add_argument('--learning_strategy', '-ls', type=str, default='patience_fine_tuning', help='Determines if we do an end-to-end training or a fine-tuning process (only available for U-Net and DeeplabV3Plus)', choices=['end_to_end', 'fixed_fine_tuning', 'patience_fine_tuning'])
+    parser.add_argument('--batch_size', '-b', type=int, default=config.BATCH_SIZE, help='Batch size')
+    parser.add_argument('--learning_rate', '-lr', type=float, default=config.LEARNING_RATE, help='Learning rate')
     
     #Fine tuning parameters, only enabled if  learning strategy involves fine tuning.
     parser.add_argument('--patience', '-p', type=int, default=config.FT_PATIENCE, help='Patience for fine training. Ensure that patience < epochs')

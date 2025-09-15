@@ -54,7 +54,7 @@ class CustomSegmentationTask(pl.LightningModule):
         self.log(name='train_loss',
                  value=loss,
                  prog_bar=True,
-                 on_step=True,
+                 on_step=False,
                  on_epoch=True)
     
         return loss # lighting does the step and backprop itself
@@ -68,6 +68,8 @@ class CustomSegmentationTask(pl.LightningModule):
                  prog_bar=True,
                  on_step=False,
                  on_epoch=True)
+        
+
     
     def on_validation_epoch_end(self):
         iou = self.iou_metric.compute()
