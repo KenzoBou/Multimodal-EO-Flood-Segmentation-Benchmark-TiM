@@ -6,9 +6,10 @@ def get_args():
     parser = argparse.ArgumentParser(description='Train a segmentation model for flood detection based on S1 and S2 data')
     
     #Model parameters
-    parser.add_argument('--architecture', '-a', type=str, default='unet', help='Model architecture', required=True, choices=['unet', 'deeplab_v3_plus','terramind', 'terramind_tim'])
+    parser.add_argument('--architecture', '-a', type=str, default='unet', help='Model architecture', required=True, choices=['unet', 'deeplab_v3_plus','terramind_base', 'terramind_tim'])
     parser.add_argument('--backbone',  type=str, default='resnet34', help='Segmentation backbone', choices=['resnet34', 'resnet101', 'efficientnet-b0'])
-    
+    parser.add_argument('--terramind_decoder', '-td', type=str, default='UNetDecoder', help='Terramind decoder', required=False, choices=['UNetDecoder', 'MMSegmentation'])
+
     #Learning parameters
     parser.add_argument('--epochs', '-e', type=int, default=config.NUM_EPOCHS, help='Number of training epochs')
     parser.add_argument('--learning_strategy', '-ls', type=str, default='patience_fine_tuning', help='Determines if we do an end-to-end training or a fine-tuning process (only available for U-Net and DeeplabV3Plus)', choices=['end_to_end', 'fixed_fine_tuning', 'patience_fine_tuning'])

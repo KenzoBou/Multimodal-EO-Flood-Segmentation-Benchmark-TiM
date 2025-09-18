@@ -5,9 +5,11 @@ from torchmetrics.classification import MulticlassJaccardIndex
 
 from vision_models.unet import create_unet
 from vision_models.deeplab import create_deeplab
+from vision_models.terramind_base import create_terramind_base
+
 
 class CustomSegmentationTask(pl.LightningModule):
-    def __init__(self, architecture, backbone, learning_rate, input_dim,num_classes):
+    def __init__(self, architecture, smp_backbone=None, learning_rate=1e-4, input_dim=None,num_classes=2, terramind_decoder='UNetDecoder'):
         super().__init__()
         self.save_hyperparameters()
         # We'll use the factories to create the architecture of the models
@@ -26,14 +28,22 @@ class CustomSegmentationTask(pl.LightningModule):
                 num_classes=self.hparams.num_classes,
                 model_root=None
             )
+
+        elif self.hparams.architecture == 'terramind_base':
+            self.model = create_terramind_base(
+                terramind_decoder=self.hparams.terramind_decoder,
+                num_classes=self.hparams.num_classes,
+            )
+        
         else :
             raise ValueError(f'Architecture {self.hparams.architecture} is not supported')
 
         self.loss_fn = nn.CrossEntropyLoss(ignore_index=-1)
+        self.plot_validation_step = []
         self.iou_metric = MulticlassJaccardIndex(
         num_classes=self.hparams.num_classes,
         average='none', #We want per class IoU for benchmark
-        ignore_index=-1
+        ignore_index=-1,
     )
 
     def forward(self, x):
@@ -69,6 +79,12 @@ class CustomSegmentationTask(pl.LightningModule):
                  on_step=False,
                  on_epoch=True)
         
+        if batch_idx == 0:
+            self.plot_validation_step.append({
+            'preds': torch.argmax(torch.softmax(output,  dim=1), dim=1),
+            'masks': mask,
+            'images':batch['image']
+            })
 
     
     def on_validation_epoch_end(self):
@@ -76,13 +92,19 @@ class CustomSegmentationTask(pl.LightningModule):
         val_iou_water = iou[1]
         self.log(name='val_iou_water',
                  value=val_iou_water,
-                 on_epoch=True,
-                 prog_bar=True)
+                 prog_bar=True,
+                 on_step=False,
+                 on_epoch=True)
         self.iou_metric.reset()
+        self.plot_validation_step.clear() #we clear the plots, to be ready for the next epoch
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.learning_rate)
         return optimizer
+
+
+
+
 
 # if __name__ == '__main__':
 #     task = CustomSegmentationTask(

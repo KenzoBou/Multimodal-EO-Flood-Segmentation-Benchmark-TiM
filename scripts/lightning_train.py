@@ -10,7 +10,7 @@ from terratorch.datamodules import GenericMultiModalDataModule
 import config
 from utils.parser import get_args 
 from lightning_wrappers import CustomSegmentationTask
-from lightning_callbacks import EncoderFineTuning
+from lightning_callbacks import EncoderFineTuning, PredictionLogger
 
 
 def run():
@@ -24,6 +24,11 @@ def run():
     ARCHITECTURE = args.architecture
     BACKBONE = args.backbone
     PATIENCE = args.patience
+    TERRAMIND_DECODER = args.terramind_decoder
+
+    concat_bands = False if 'terramind' in ARCHITECTURE else True
+    print(f"------------------Concat bands is set to {concat_bands}-----------------------")
+
 
     run_name = f'{ARCHITECTURE}|{BACKBONE}|{LEARNING_RATE}'
     mlflow_log = MLFlowLogger(
@@ -74,7 +79,7 @@ def run():
             'S2': config.S2_BANDS_NAMES_TO_USE,
             'S1': ['VV', 'VH']
         },
-        concat_bands=True,
+        concat_bands=concat_bands,
         means={
             'S2':filtered_s2_means,
             'S1':config.GLOBAL_MEAN_BANDS[-2:]
@@ -123,13 +128,16 @@ def run():
         max_epochs=MAX_EPOCHS,
         precision='16-mixed', #accelerates compute
         logger=mlflow_log,
-        callbacks=[checkpoint_callback, fine_tuning_callback]
+        callbacks=[checkpoint_callback, 
+                   fine_tuning_callback,
+                   PredictionLogger(num_instances=3)],
     )
 
     
     model = CustomSegmentationTask(
         architecture=ARCHITECTURE,
-        backbone=BACKBONE,
+        smp_backbone=BACKBONE,
+        terramind_decoder= TERRAMIND_DECODER,
         learning_rate=LEARNING_RATE,
         input_dim=INPUT_DIM,
         num_classes=NUM_CLASSES

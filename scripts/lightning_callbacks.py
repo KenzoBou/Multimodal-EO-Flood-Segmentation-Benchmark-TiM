@@ -1,5 +1,11 @@
+
 from lightning.pytorch import Callback
+import torch
 import lightning.pytorch as pl
+import matplotlib.pyplot as plt 
+import numpy as np
+
+import config
 
 class EncoderFineTuning(Callback):
     "Callback to unfreeze the encoder when the validation loss has not decreased for a given number of epochs (patience)"
@@ -41,14 +47,23 @@ class EncoderFineTuning(Callback):
             self._unfreeze_and_update_optimizer(trainer, pl_module=pl_module)
             self.is_frozen=False
             self.patience_counter = 0 
+    
+    def _get_encoder(self, pl_module:pl.LightningModule):
+        if 'terramind' in str(pl_module.hparams.architecture):
+            return pl_module.model.model.encoder
+        else :
+            return pl_module.model.encoder
 
     def _freeze_encoder(self, pl_module):
-        for param in pl_module.model.encoder.parameters():
+        encoder = self._get_encoder(pl_module)
+        for param in encoder.parameters():
             param.requires_grad = False
     
     def _unfreeze_and_update_optimizer(self, trainer, pl_module):
+        encoder = self._get_encoder(pl_module)
+
         # 1, unfreeze the weights 
-        for param in pl_module.model.encoder.parameters():
+        for param in encoder.parameters():
             param.requires_grad = True 
         
         # 2, retrieve learning rate and current optimizer
@@ -57,8 +72,56 @@ class EncoderFineTuning(Callback):
 
         # 3 update optimizer
         optimizer.add_param_group({
-            'params':pl_module.model.encoder.parameters(),
+            'params': encoder.parameters(),
             'lr': self.unfreeze_lr
         })
         print(f"UNFREEZING ENCODER | ENCODER LR {self.unfreeze_lr}, DECODER LR {decoder_lr}")
         
+class PredictionLogger(pl.Callback):
+    def __init__(self, num_instances:int = 3):
+        super().__init__()
+        self.num_samples=num_instances
+
+    def on_validation_epoch_end(self, trainer:pl.Trainer, pl_module:pl.LightningModule):
+        if not hasattr(pl_module, 
+                       'plot_validation_step'):
+            print('No validation outputs found, returning None')
+            return 
+        
+        # We retrieve the batch
+        outputs = pl_module.plot_validation_step[0]
+        image = outputs['images'].cpu()
+        preds = outputs['preds'].cpu()
+        masks = outputs['masks'].cpu()
+        
+        fig, axes = plt.subplots(nrows=3, ncols=self.num_samples)
+        fig.suptitle(f'Epoch {trainer.current_epoch}: Predicitions vs. Ground Truth')
+
+        for i in range(self.num_samples):
+            mean = torch.tensor(config.GLOBAL_MEAN_BANDS_TO_USE).view((-1,1,1))
+            std = torch.tensor(config.GLOBAL_STD_BANDS_TO_USE).view((-1,1,1))
+            image_denorm = (image[i] * std + mean)
+            image_rgb = image_denorm[[4,3,2],:,:].numpy()
+            min_rgb, max_rgb = np.percentile(image_rgb, (2, 98), axis=(1, 2), keepdims=True)
+            normalized_rgb = ((image_rgb - min_rgb) / (max_rgb - min_rgb)).transpose(1,2,0)
+            axes[0,i].imshow(normalized_rgb)
+            axes[0,i].set_title(f'Input Image (RGB) {i}')
+            axes[0,i].axis('off')
+            axes[1,i].imshow(masks[i], cmap='gray', vmin=0, vmax=1)
+            axes[1,i].set_title(f'Ground Truth Mask {i}')
+            axes[1,i].axis('off')
+            axes[2,i].imshow(preds[i], cmap='gray', vmin=0, vmax=1)
+            axes[2,i].set_title(f'Predicted Mask {i}')
+            axes[2,i].axis('off')
+
+        if isinstance(trainer.logger, pl.loggers.MLFlowLogger):
+            trainer.logger.experiment.log_figure(
+                run_id=trainer.logger.run_id,
+                figure=fig,
+                artifact_file=f'predictions_epoch_{trainer.current_epoch}.png'
+            )
+        plt.close(fig)
+
+
+if __name__ == '__main__':
+    pred_log = PredictionLogger(5)
