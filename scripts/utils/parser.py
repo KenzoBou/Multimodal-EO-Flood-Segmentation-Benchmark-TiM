@@ -20,4 +20,9 @@ def get_args():
     parser.add_argument('--patience', '-p', type=int, default=config.FT_PATIENCE, help='Patience for fine training. Ensure that patience < epochs')
     parser.add_argument('--ratio', '-r', type=float, default=config.FT_RATIO, help='Ratio for fine training. Ensure that ratio is <1')
 
+    #Parameters to resume training in case of bug 
+    parser.add_argument("--resume_ckpt", '-ckpt', type=str, default=None, help="Resume training with ckpt file", required=False)
+    parser.add_argument("--resume_mlflow_run", '-run', type=str, default=None, help="Resume mlflow run with ID", required=False)
+    
+
     return parser.parse_args()

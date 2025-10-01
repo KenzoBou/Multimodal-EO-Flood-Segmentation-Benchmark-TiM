@@ -81,7 +81,7 @@ class PredictionLogger(pl.Callback):
     def __init__(self, num_instances:int = 3):
         super().__init__()
         self.num_samples=num_instances
-
+    
     def on_validation_epoch_end(self, trainer:pl.Trainer, pl_module:pl.LightningModule):
         if not hasattr(pl_module, 
                        'plot_validation_step'):
@@ -90,16 +90,26 @@ class PredictionLogger(pl.Callback):
         
         # We retrieve the batch
         outputs = pl_module.plot_validation_step[0]
-        image = outputs['images'].cpu()
+        image = outputs['images']['S2L1C'].cpu() if 'terramind' in trainer.model.hparams.architecture else outputs['images'].cpu()
         preds = outputs['preds'].cpu()
         masks = outputs['masks'].cpu()
+
+        architecture = pl_module.hparams.architecture
+        if 'terramind' in architecture:
+            image = outputs['images']['S2L1C'].cpu()
+        else: 
+            image = outputs['images'].cpu()
         
         fig, axes = plt.subplots(nrows=3, ncols=self.num_samples)
         fig.suptitle(f'Epoch {trainer.current_epoch}: Predicitions vs. Ground Truth')
 
         for i in range(self.num_samples):
-            mean = torch.tensor(config.GLOBAL_MEAN_BANDS_TO_USE).view((-1,1,1))
-            std = torch.tensor(config.GLOBAL_STD_BANDS_TO_USE).view((-1,1,1))
+            if 'terramind' in architecture: 
+                mean = torch.tensor(config.S2_MEAN_BANDS_TO_USE).view((-1,1,1))
+                std = torch.tensor(config.S2_STD_BANDS_TO_USE).view((-1,1,1))
+            else: 
+                mean = torch.tensor(config.GLOBAL_MEAN_BANDS_TO_USE).view((-1,1,1))
+                std = torch.tensor(config.GLOBAL_STD_BANDS_TO_USE).view((-1,1,1))
             image_denorm = (image[i] * std + mean)
             image_rgb = image_denorm[[4,3,2],:,:].numpy()
             min_rgb, max_rgb = np.percentile(image_rgb, (2, 98), axis=(1, 2), keepdims=True)

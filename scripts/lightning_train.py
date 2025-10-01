@@ -29,12 +29,20 @@ def run():
     concat_bands = False if 'terramind' in ARCHITECTURE else True
     print(f"------------------Concat bands is set to {concat_bands}-----------------------")
 
+    if args.resume_mlflow_run:
+        mlflow_log = MLFlowLogger(
+            experiment_name=config.EXPERIMENT_NAME,
+            run_id=args.resume_mlflow_run
+        )
 
-    run_name = f'{ARCHITECTURE}|{BACKBONE}|{LEARNING_RATE}'
-    mlflow_log = MLFlowLogger(
-        experiment_name=config.EXPERIMENT_NAME,
-        run_name=run_name
-    )
+
+
+    else: 
+        run_name = f'{ARCHITECTURE}|{BACKBONE}|{LEARNING_RATE}'
+        mlflow_log = MLFlowLogger(
+            experiment_name=config.EXPERIMENT_NAME,
+            run_name=run_name
+        )
 
     checkpoint_callback = ModelCheckpoint(dirpath=config.MODEL_PATH,
                                           filename=f"{ARCHITECTURE}-{BACKBONE}"+"-{epoch:02d}-{val_iou_water:.2f}",
@@ -54,10 +62,10 @@ def run():
     data_path = config.PROJECT_ROOT / 'Sen1Floods11-Benchmark' / 'dataset' /'sen1floods11_v1.1'/ 'sen1floods11_v1.1'/ 'data'
     split_path = config.PROJECT_ROOT / 'Sen1Floods11-Benchmark' / 'dataset' /'sen1floods11_v1.1'/ 'sen1floods11_v1.1'/'splits'
 
-    # normalize_transform = {'S2':transforms.Compose([transforms.Normalize(
+    # normalize_transform = {'S2L1C':transforms.Compose([transforms.Normalize(
     #     mean=config.GLOBAL_MEAN_BANDS, 
     #     std=config.GLOBAL_STD_BANDS
-    # )]), 'S1':transforms.Compose([transforms.Normalize(
+    # )]), 'S1GRD':transforms.Compose([transforms.Normalize(
     #     mean=config.GLOBAL_MEAN_BANDS, 
     #     std=config.GLOBAL_STD_BANDS
     # )])}
@@ -68,25 +76,25 @@ def run():
         task='segmentation',
         batch_size=BATCH_SIZE,
         num_classes=NUM_CLASSES,
-        modalities=['S2','S1'],
+        modalities=['S2L1C','S1GRD'],
         num_workers=4,
 
         dataset_bands={
-            'S2': ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B10','B11', 'B12'],
-            'S1': ['VV', 'VH']
+            'S2L1C': ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B10','B11', 'B12'],
+            'S1GRD': ['VV', 'VH']
         },
         output_bands={
-            'S2': config.S2_BANDS_NAMES_TO_USE,
-            'S1': ['VV', 'VH']
+            'S2L1C': config.S2_BANDS_NAMES_TO_USE,
+            'S1GRD': ['VV', 'VH']
         },
         concat_bands=concat_bands,
         means={
-            'S2':filtered_s2_means,
-            'S1':config.GLOBAL_MEAN_BANDS[-2:]
+            'S2L1C':filtered_s2_means,
+            'S1GRD':config.GLOBAL_MEAN_BANDS[-2:]
         },
         stds={
-            'S2':filtered_s2_stds,
-            'S1':config.GLOBAL_STD_BANDS[-2:]
+            'S2L1C':filtered_s2_stds,
+            'S1GRD':config.GLOBAL_STD_BANDS[-2:]
         },
         train_transform=None,
         # train_transform=[
@@ -98,19 +106,19 @@ def run():
 
         #Roots to train and val datasets (they are the same before text split)
         train_data_root={
-            'S2':data_path/'S2L1CHand',
-            'S1':data_path/'S1GRDHand'
+            'S2L1C':data_path/'S2L1CHand',
+            'S1GRD':data_path/'S1GRDHand'
         },
         train_label_data_root=data_path/'LabelHand',
         val_data_root={
-            'S2':data_path/'S2L1CHand',
-            'S1':data_path/'S1GRDHand'
+            'S2L1C':data_path/'S2L1CHand',
+            'S1GRD':data_path/'S1GRDHand'
         },
         val_label_data_root=data_path/'LabelHand',
         
         test_data_root={
-            'S2':data_path/'S2L1CHand',
-            'S1':data_path/'S1GRDHand'
+            'S2L1C':data_path/'S2L1CHand',
+            'S1GRD':data_path/'S1GRDHand'
         },
         test_label_data_root=data_path/'LabelHand',
         train_split=split_path/'flood_train_data.txt',
@@ -144,7 +152,8 @@ def run():
     )
     
     print("Starting training...")
-    pl_trainer.fit(model, datamodule=datamodule)
+    pl_trainer.fit(model, datamodule=datamodule, ckpt_path=args.resume_ckpt) #the last argument is used in case of bug during a previous training
+    #the default argument for resume_ckpt is None, so that nothing happens 
 
 if __name__ == '__main__':
     run()

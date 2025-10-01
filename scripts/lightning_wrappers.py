@@ -55,8 +55,18 @@ class CustomSegmentationTask(pl.LightningModule):
         mask = batch['mask'].squeeze(1)
         
         outputs = self(image)
-        loss = self.loss_fn(outputs, mask)
-        return loss, outputs, mask 
+        if hasattr(outputs, 'dict'):
+            logits = outputs['output']
+        elif hasattr(outputs, 'output'):
+            logits = outputs.output
+        else : 
+            logits = outputs
+
+        loss = self.loss_fn(logits, mask)
+        
+        # if outputs.shape[-2:] !=
+
+        return loss, logits, mask 
 
     def training_step(self, batch, batch_idx):
         loss, _, _ = self._common_steps(batch, batch_idx)
