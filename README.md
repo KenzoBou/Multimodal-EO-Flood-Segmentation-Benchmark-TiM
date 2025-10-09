@@ -13,10 +13,10 @@ The pipeline integrates advanced software engineering practices with domain-spec
 ### 1. Robust Data & Infrastructure Engineering
 
 - **MLOps Integration:** Established full experiment lifecycle management using **MLflow**, including logging of all command-line parameters (`argparse`) and tracking performance across multiple runs for complete reproducibility.
-- **Resumption Capability:** Implemented a secure training resumption mechanism using PyTorch Lightning's checkpointing, ensuring continuity of long training jobs by restoring model, optimizer, and training states from a `.ckpt` file.
-- **Data Pipeline Alignment:** Addressed critical challenges related to multi-modal data homogeneity using `GenericMultiModalDataModule` (TerraTorch):
-    - **Channel Consistency:** Ensured strict channel alignment for the model input by configuring dynamic `output_bands` to match the exact channel count expected by different pre-trained backbones (e.g., 13 channels for Sentinel-2 L1C for TerraMind).
-    - **Artifact Handling:** Configured the DataModule to process artifacts and non-data values, aligning `no_label_replace=255` with the `ignore_index` of the `CrossEntropyLoss` and `MulticlassJaccardIndex` to prevent fatal GPU assertion errors during training.
+- **Resumption:** Implemented a secure training resumption mechanism using PyTorch Lightning's checkpointing, ensuring continuity of long training jobs by restoring model, optimizer, and training states from a `.ckpt` file.
+- **Data Pipeline:** Addressed critical challenges related to multi-modal data homogeneity using `GenericMultiModalDataModule` (TerraTorch):
+    - **Channel consistency:** Ensured strict channel alignment for the model input by configuring dynamic `output_bands` to match the exact channel count expected by different pre-trained backbones (e.g., 13 channels for Sentinel-2 L1C for TerraMind).
+    - **Artifact handling:** Configured the DataModule to process artifacts and non-data values, aligning `no_label_replace=255` with the `ignore_index` of the `CrossEntropyLoss` and `MulticlassJaccardIndex` to prevent fatal GPU assertion errors during training.
 
 ### 2. Advanced Training Strategies
 
@@ -27,7 +27,7 @@ The pipeline integrates advanced software engineering practices with domain-spec
 
 ### 3. Comprehensive Performance Analysis
 
-- **Benchmarking Capabilities:** The framework supports the comparison of **U-Net** and **DeepLabV3+** architectures against the **TerraMind** GFM.
+- **Benchmarking:** The framework supports the comparison of **U-Net** and **DeepLabV3+** architectures against the **TerraMind** GFM.
 - **Metrics Accuracy:** Utilized `torchmetrics` with the `average='none'` setting to log the accurate **IoU per class** (specifically for the challenging 'Water' class, Index 1), avoiding inflated scores typical of global metrics.
 - **Qualitative Insight (`PredictionLogger`):** Created a custom callback to generate and log visual prediction artifacts in **MLflow** at every validation epoch, enabling intuitive debugging and visual identification of model failure modes (e.g., cloud shadow confusion, boundary errors).
 
