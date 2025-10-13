@@ -2,13 +2,12 @@
 
 ## 🎯 Project Goal
 
-To build a robust and highly configurable PyTorch Lightning framework for semantic segmentation on complex geospatial data (Sen1Floods11 dataset), enabling systematic comparison between classic CNN architectures and Geo-Foundation Models (GFM).
+To build a robust and configurable PyTorch Lightning framework for semantic segmentation on complex geospatial data (Sen1Floods11 dataset), enabling systematic comparison between classic CNN architectures and Geo-Foundation Models (GFM).
 
 ---
 
-## 🛠️ Technical Contributions and Methodological Mastery
+## 🛠️ Technical Contributions and Methodology
 
-The pipeline integrates advanced software engineering practices with domain-specific deep learning techniques:
 
 ### 1. Robust Data & Infrastructure Engineering
 
