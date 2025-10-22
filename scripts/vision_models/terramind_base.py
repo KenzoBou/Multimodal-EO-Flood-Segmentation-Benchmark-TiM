@@ -19,7 +19,6 @@ def create_terramind_base(terramind_decoder='UNetDecoder', num_classes=2):
             "backbone_pretrained": True,
             "backbone_modalities": ["S2L1C", "S1GRD"],
             "backbone_bands": {"S2L1C":S2_BANDS_NAMES_TO_USE},
-            # Optionally, define the input bands. This is only needed if you select a subset of the pre-training bands, as explained above.
             # "backbone_bands": {"S1GRD": ["VV"]},
             
             # Necks 
