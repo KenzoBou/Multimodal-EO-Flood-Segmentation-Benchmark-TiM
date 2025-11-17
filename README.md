@@ -1,12 +1,12 @@
 # Multi-Modal Semantic Segmentation Pipeline (Sentinel-1 & Sentinel-2)
 
-## 🎯 Project Goal
+## Project Goal
 
 To build a robust and configurable PyTorch Lightning framework for semantic segmentation on complex geospatial data (Sen1Floods11 dataset), enabling systematic comparison between classic CNN architectures and Geo-Foundation Models (GFM).
 
 ---
 
-## 🛠️ Technical Contributions and Methodology
+## Technical Contributions and Methodology
 
 
 ### 1. Robust Data & Infrastructure Engineering
